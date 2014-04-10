@@ -1,0 +1,7 @@
+target/
+work/
+*.ipr
+*.iws
+*.iml
+atlassian-ide-plugin.xml
+jetty.log
