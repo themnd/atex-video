@@ -5,10 +5,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletException;
@@ -17,14 +18,15 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.atex.milan.video.couchbase.DBClient;
+import com.atex.milan.video.couchbase.VideoRepository;
 import com.atex.milan.video.data.Video;
 import com.atex.milan.video.exceptions.CouchException;
 import com.atex.milan.video.util.InjectorUtils;
+import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.inject.Inject;
 
 /**
@@ -44,11 +46,12 @@ public class FileServlet extends HttpServlet
   private static final int DEFAULT_BUFFER_SIZE = 10240; // ..bytes = 10KB.
   private static final long DEFAULT_EXPIRE_TIME = 604800000L; // ..ms = 1 week.
   private static final String MULTIPART_BOUNDARY = "MULTIPART_BYTERANGES";
+  private static final Pattern urlRe = Pattern.compile("^/([^/]+)/([^/]+?)(?:\\.([^/]+))?$");
 
   // Actions ------------------------------------------------------------------------------------
 
   @Inject
-  private DBClient dbClient;
+  private VideoRepository videoRepository;
   /**
    * Initialize the servlet.
    * @see HttpServlet#init().
@@ -92,7 +95,7 @@ public class FileServlet extends HttpServlet
     // Validate the requested file ------------------------------------------------------------
 
     // Get requested file by path info.
-    String requestedFile = request.getPathInfo();
+    final String requestedFile = request.getPathInfo();
 
     // Check if file is actually supplied to the request URL.
     if (requestedFile == null) {
@@ -101,12 +104,20 @@ public class FileServlet extends HttpServlet
       response.sendError(HttpServletResponse.SC_NOT_FOUND);
       return;
     }
+    
+    final Matcher m = urlRe.matcher(requestedFile);
+    if (!m.find()) {
+      response.sendError(HttpServletResponse.SC_NOT_FOUND);
+      return;      
+    }
+    
+    final String fileType = Optional.fromNullable(m.group(1)).or("video");
+    final String videoId = Strings.nullToEmpty(m.group(2));
+    final String videoExt = Strings.nullToEmpty(m.group(3));
 
     final File file;
-    final String path = URLDecoder.decode(requestedFile, "UTF-8");
-    final String videoId = FilenameUtils.getBaseName(path);
     try {
-      final Video v = dbClient.get(videoId, Video.class);
+      final Video v = videoRepository.getVideo(videoId);
       if (v == null) {
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         return;
@@ -116,7 +127,7 @@ public class FileServlet extends HttpServlet
       throw new IOException("Error getting video " + videoId, e);
     }
 
-    logger.info("File {} ready for download", file.getAbsolutePath());
+    logger.debug("File {} ready for download", file.getAbsolutePath());
 
     // Check if file actually exists in filesystem.
     if (!file.exists()) {
@@ -133,7 +144,7 @@ public class FileServlet extends HttpServlet
     String eTag = fileName + "_" + length + "_" + lastModified;
     long expires = System.currentTimeMillis() + DEFAULT_EXPIRE_TIME;
 
-    logger.info("eTag {}", eTag);
+    logger.debug("eTag {}", eTag);
 
     // Validate request headers for caching ---------------------------------------------------
 
@@ -184,7 +195,7 @@ public class FileServlet extends HttpServlet
     String range = request.getHeader("Range");
     if (range != null) {
 
-      logger.info("Range requested {}", range);
+      logger.debug("Range requested {}", range);
 
       // Range header should match format "bytes=n-n,n-n,n-n...". If not, then return 416.
       if (!range.matches("^bytes=\\d*-\\d*(,\\d*-\\d*)*$")) {

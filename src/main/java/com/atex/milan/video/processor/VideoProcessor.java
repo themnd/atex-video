@@ -46,6 +46,7 @@ public class VideoProcessor extends BaseVideoProcessor
       }
 
       setVideoPath(originalMessage, out.getAbsolutePath());
+      setVideoType(originalMessage, FilenameUtils.getExtension(outFilename));
 
     } catch (Exception e) {
       logger.error("Error while processing {}: {}", path, e.getMessage(), e);

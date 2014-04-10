@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
-import com.atex.milan.video.couchbase.DBClient;
+import com.atex.milan.video.couchbase.VideoRepository;
 import com.atex.milan.video.exceptions.CouchException;
 import com.atex.milan.video.guice.ConfigureModule;
 import com.atex.milan.video.util.InjectorUtils;
@@ -35,8 +35,8 @@ public class VideoContextListener implements ServletContextListener
     );
 
     try {
-      final DBClient client = InjectorUtils.getInstance().newInstance(DBClient.class);
-      client.init();
+      final VideoRepository repository = InjectorUtils.getInstance().newInstance(VideoRepository.class);
+      repository.initRepository();
     } catch (CouchException e) {
       logger.error(e.getMessage(), e);
       throw new RuntimeException(e);
@@ -54,8 +54,8 @@ public class VideoContextListener implements ServletContextListener
   {
     logger.info("destroying context");
 
-    final DBClient client = InjectorUtils.getInstance().newInstance(DBClient.class);
-    client.shutdown();
+    final VideoRepository repository = InjectorUtils.getInstance().newInstance(VideoRepository.class);
+    repository.shutdown();
 
     final ServletContext servletContext = event.getServletContext();
     InjectorUtils.getInstance().removeInjector(servletContext);

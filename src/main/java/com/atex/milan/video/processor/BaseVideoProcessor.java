@@ -50,6 +50,11 @@ public abstract class BaseVideoProcessor extends BaseGuiceProcessor
     return (String) getMessageProperty(msg, VideoConfigurationProcessor.VIDEOID_HEADER);
   }
 
+  public void setVideoType(final Message msg, final String type)
+  {
+    setMessageProperty(msg, VideoConfigurationProcessor.VIDEOTYPE_HEADER, type);
+  }
+
   public void setVideoPath(final Message msg, final String path)
   {
     setMessageProperty(msg, VideoConfigurationProcessor.VIDEOPATH_HEADER, path);

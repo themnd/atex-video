@@ -141,6 +141,34 @@ public class DBClientImpl implements DBClient
     return null;
   }
 
+  @Override
+  public boolean add(final String id, final Object o) throws CouchException
+  {
+    final Gson gson = new Gson();
+
+    return Optional.fromNullable(wrapCouchCall(new CouchFunction<Boolean>()
+    {
+      @Override
+      public Boolean apply(final CouchbaseClient c) throws Exception
+      {
+        return c.add(id, gson.toJson(o)).get();
+      }
+    })).or(false);
+  }
+
+  @Override
+  public long incr(final String id) throws CouchException
+  {
+    return wrapCouchCall(new CouchFunction<Long>()
+    {
+      @Override
+      public Long apply(final CouchbaseClient c) throws Exception
+      {
+        return c.incr(id, 1);
+      }
+    });
+  }
+
   private <T> T wrapCouchCall(final CouchFunction<T> f) throws CouchException
   {
     try {

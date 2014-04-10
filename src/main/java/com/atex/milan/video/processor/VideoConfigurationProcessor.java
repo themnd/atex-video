@@ -21,6 +21,7 @@ public class VideoConfigurationProcessor extends BaseVideoProcessor
 
   public static final String OUTPUTDIR_HEADER = VideoConfigurationProcessor.class.getName() + ".VideoOutputDir";
   public static final String VIDEOID_HEADER = VideoConfigurationProcessor.class.getName() + ".VideoId";
+  public static final String VIDEOTYPE_HEADER = VideoConfigurationProcessor.class.getName() + ".VideoType";
   public static final String VIDEOPATH_HEADER = VideoConfigurationProcessor.class.getName() + ".VideoPath";
   public static final String THUMBPATH_HEADER = VideoConfigurationProcessor.class.getName() + ".ThumbPath";
 

@@ -1,8 +1,7 @@
 package com.atex.milan.video.exceptions;
 
 /**
- * CouchException
- * 09/04/14 on 15:13
+ * Exception throws when handling with couchbase operations.
  *
  * @author mnova
  */
@@ -11,6 +10,11 @@ public class CouchException extends Exception
   public CouchException(final Throwable e)
   {
     super(e);
+  }
+
+  public CouchException(final String m)
+  {
+    super(m);
   }
 
 }
