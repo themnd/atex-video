@@ -33,6 +33,8 @@ public interface VideoRepository
    */
   Video addVideo(final Video v) throws CouchException;
 
+  boolean setVideo(Video v) throws CouchException;
+
   /**
    * Fetch the video data.
    *
@@ -41,4 +43,6 @@ public interface VideoRepository
    * @throws CouchException
    */
   Video getVideo(final String id) throws CouchException;
+
+  Video getVideoByUUID(String uuid) throws CouchException;
 }

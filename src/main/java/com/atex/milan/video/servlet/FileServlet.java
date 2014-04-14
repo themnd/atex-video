@@ -18,16 +18,19 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.atex.milan.video.couchbase.VideoRepository;
+import com.atex.milan.video.data.Media;
 import com.atex.milan.video.data.Video;
 import com.atex.milan.video.exceptions.CouchException;
 import com.atex.milan.video.util.InjectorUtils;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 
 /**
  * A file servlet supporting resume of downloads and client-side caching and GZIP of text content.
@@ -52,6 +55,11 @@ public class FileServlet extends HttpServlet
 
   @Inject
   private VideoRepository videoRepository;
+
+  @Inject
+  @Named("video.repository.base")
+  private String baseRepository;
+
   /**
    * Initialize the servlet.
    * @see HttpServlet#init().
@@ -122,7 +130,22 @@ public class FileServlet extends HttpServlet
         response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         return;
       }
-      file = new File(v.getVideoPath());
+      Media videoMedia = null;
+      for (final Media media : v.getMedia()) {
+        if (StringUtils.equals(media.getExtension(), videoExt)) {
+          videoMedia = media;
+          break;
+        }
+      }
+      if (videoMedia == null) {
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        return;
+      }
+      String videoPath = videoMedia.getPath();
+      if (!videoPath.startsWith("/")) {
+        videoPath = String.format("%s/%s", baseRepository, videoPath);
+      }
+      file = new File(videoPath);
     } catch (CouchException e) {
       throw new IOException("Error getting video " + videoId, e);
     }

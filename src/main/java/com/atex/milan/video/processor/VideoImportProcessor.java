@@ -1,5 +1,7 @@
 package com.atex.milan.video.processor;
 
+import java.util.Map;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.commons.io.FilenameUtils;
@@ -16,38 +18,51 @@ import com.google.inject.Inject;
  *
  * @author mnova
  */
-public class VideoImportProcessor extends BaseGuiceProcessor
+public class VideoImportProcessor extends BaseVideoProcessor
 {
   private static final Logger logger = LoggerFactory.getLogger(VideoImportProcessor.class);
 
   @Inject
   private VideoRepository videoRepository;
-
+  
   @Override
   public void process(final Exchange exchange) throws Exception
   {
     logger.trace("{} - start work", this.getClass().getSimpleName());
 
-    final Message msg = exchange.getIn();
+    try {
+      final Message msg = exchange.getIn();
 
-    final String videoUUID = (String) getMessageProperty(msg, VideoConfigurationProcessor.VIDEOID_HEADER);
-    final String videoType = (String) getMessageProperty(msg, VideoConfigurationProcessor.VIDEOTYPE_HEADER);
-    final String videoPath = (String) getMessageProperty(msg, VideoConfigurationProcessor.VIDEOPATH_HEADER);
-    final String thumbPath = (String) getMessageProperty(msg, VideoConfigurationProcessor.THUMBPATH_HEADER);
-    
-    final Video v = new Video();
-    v.setType(DataType.VIDEO);
-    v.setUuid(videoUUID);
-    v.setVideoType(videoType);
-    v.setName(FilenameUtils.getName(videoPath));
-    v.setVideoPath(videoPath);
-    v.setThumbPath(thumbPath);
+      final Map<String, Object> headers = msg.getHeaders();
 
-    {
-      final Video newVideo = videoRepository.addVideo(v);
-      if (newVideo == null) {
-        throw new Exception("Error saving in database");
+      final String name = (String) headers.get("CamelFileNameOnly");
+
+      final String videoUUID = (String) getMessageProperty(msg, VideoConfigurationProcessor.VIDEOID_HEADER);
+
+      Video v = videoRepository.getVideoByUUID(videoUUID);
+      final boolean isNew = (v == null);
+      if (v == null) {
+        v = new Video();
+        v.setType(DataType.VIDEO);
+        v.setUuid(videoUUID);
       }
+
+      v.setName(FilenameUtils.getName(name));
+      v.setVideoInfo(getVideoInfoOrig(msg));
+      v.setMedia(getMedia(msg));
+
+      if (isNew) {
+        final Video newVideo = videoRepository.addVideo(v);
+        if (newVideo == null) {
+          throw new Exception("Error saving in database");
+        }
+      } else {
+        if (!videoRepository.setVideo(v)) {
+          throw new Exception("Error saving in database");
+        }
+      }
+    } finally {
+      logger.trace("{} - end work", this.getClass().getSimpleName());
     }
   }
 

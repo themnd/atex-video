@@ -1,5 +1,9 @@
 package com.atex.milan.video.data;
 
+import java.util.List;
+
+import com.google.common.collect.Lists;
+
 /**
  * Video model
  *
@@ -10,9 +14,8 @@ public class Video extends BaseModel
   private String id;
   private String uuid;
   private String name;
-  private String videoType;
-  private String videoPath;
-  private String thumbPath;
+  private VideoInfo videoInfo;
+  private List<Media> media = Lists.newArrayList();
 
   public String getId()
   {
@@ -44,33 +47,24 @@ public class Video extends BaseModel
     this.name = name;
   }
 
-  public String getVideoType()
+  public VideoInfo getVideoInfo()
   {
-    return videoType;
+    return videoInfo;
   }
 
-  public void setVideoType(final String videoType)
+  public void setVideoInfo(final VideoInfo videoInfo)
   {
-    this.videoType = videoType;
+    this.videoInfo = videoInfo;
   }
 
-  public String getVideoPath()
+  public List<Media> getMedia()
   {
-    return videoPath;
+    return media;
   }
 
-  public void setVideoPath(final String videoPath)
+  public void setMedia(final List<Media> media)
   {
-    this.videoPath = videoPath;
+    this.media = media;
   }
 
-  public String getThumbPath()
-  {
-    return thumbPath;
-  }
-
-  public void setThumbPath(final String thumbPath)
-  {
-    this.thumbPath = thumbPath;
-  }
 }

@@ -1,11 +1,15 @@
 package com.atex.milan.video.processor;
 
 import java.io.File;
+import java.util.List;
 
 import org.apache.camel.Message;
 
 import com.atex.milan.video.converter.VideoConverter;
+import com.atex.milan.video.data.Media;
+import com.atex.milan.video.data.VideoInfo;
 import com.atex.milan.video.util.ServiceProperties;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 /**
@@ -50,19 +54,33 @@ public abstract class BaseVideoProcessor extends BaseGuiceProcessor
     return (String) getMessageProperty(msg, VideoConfigurationProcessor.VIDEOID_HEADER);
   }
 
-  public void setVideoType(final Message msg, final String type)
+  public void setVideoInfoOrig(final Message msg, final VideoInfo vi)
   {
-    setMessageProperty(msg, VideoConfigurationProcessor.VIDEOTYPE_HEADER, type);
+    setMessageProperty(msg, VideoConfigurationProcessor.ORIG_VIDEO_INFO_HEADER, vi);
+  }
+  
+  public VideoInfo getVideoInfoOrig(final Message msg)
+  {
+    return (VideoInfo) getMessageProperty(msg, VideoConfigurationProcessor.ORIG_VIDEO_INFO_HEADER);
   }
 
-  public void setVideoPath(final Message msg, final String path)
+  public String getTimestamp(final Message msg)
   {
-    setMessageProperty(msg, VideoConfigurationProcessor.VIDEOPATH_HEADER, path);
+    return (String) getMessageProperty(msg, VideoConfigurationProcessor.TIMESTAMP_HEADER);
   }
 
-  public void setThumbPath(final Message msg, final String path)
+  public void addMedia(final Message msg, final Media media)
   {
-    setMessageProperty(msg, VideoConfigurationProcessor.THUMBPATH_HEADER, path);
+    List<Media> list = getMedia(msg);
+    if (list == null) {
+      list = Lists.newArrayList();
+      setMessageProperty(msg, VideoConfigurationProcessor.MEDIA_HEADER, list);
+    }
+    list.add(media);
   }
 
+  public List<Media> getMedia(final Message msg)
+  {
+    return (List<Media>) getMessageProperty(msg, VideoConfigurationProcessor.MEDIA_HEADER);
+  }
 }

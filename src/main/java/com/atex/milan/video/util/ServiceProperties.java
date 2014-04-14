@@ -14,6 +14,7 @@ public class ServiceProperties extends Properties
   {
     super();
 
+    System.out.println(this.getClass().getResource("/service.properties").toString());
     final InputStream stream = this.getClass()
       .getResourceAsStream("/service.properties");
 

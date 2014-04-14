@@ -1,5 +1,8 @@
 package com.atex.milan.video.couchbase;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -10,6 +13,11 @@ import org.slf4j.LoggerFactory;
 
 import com.atex.milan.video.exceptions.CouchException;
 import com.couchbase.client.CouchbaseClient;
+import com.couchbase.client.protocol.views.DesignDocument;
+import com.couchbase.client.protocol.views.Query;
+import com.couchbase.client.protocol.views.View;
+import com.couchbase.client.protocol.views.ViewResponse;
+import com.couchbase.client.protocol.views.ViewRow;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
@@ -165,6 +173,66 @@ public class DBClientImpl implements DBClient
       public Long apply(final CouchbaseClient c) throws Exception
       {
         return c.incr(id, 1);
+      }
+    });
+  }
+
+  @Override
+  public <T> List<T> queryView(final String designName, final String viewName, final Query q, final DBViewRowConverter<T> r) throws CouchException
+  {
+    checkNotNull(designName);
+    checkNotNull(viewName);
+    checkNotNull(q);
+    checkNotNull(r);
+
+    final Gson gson = new Gson();
+
+    return wrapCouchCall(new CouchFunction<List<T>>()
+    {
+      @Override
+      public List<T> apply(final CouchbaseClient c) throws Exception
+      {
+        final List<T> list = Lists.newArrayList();
+        final View view = c.getView(designName, viewName);
+        final ViewResponse results = c.query(view, q);
+        for (final ViewRow row : results) {
+          final T o = r.convertRow(gson, row);
+          if (o != null) {
+            list.add(o);
+          }
+        }
+        return list;
+      }
+    });
+  }
+
+  @Override
+  public <T> List<T> queryViewDocs(final String designName, final String viewName, final Query q, final Class<T> c) throws CouchException
+  {
+    checkNotNull(q);
+    checkArgument(q.willIncludeDocs());
+
+    return queryView(designName, viewName, q, new DBViewRowConverter<T>()
+    {
+      @Override
+      public T convertRow(final Gson gson, final ViewRow row)
+      {
+        return gson.fromJson((String)row.getDocument(), c);
+      }
+    });
+  }
+
+  @Override
+  public boolean createDesignDoc(final DesignDocument doc) throws CouchException
+  {
+    checkNotNull(doc);
+
+    return wrapCouchCall(new CouchFunction<Boolean>()
+    {
+      @Override
+      public Boolean apply(final CouchbaseClient c) throws Exception
+      {
+        return Optional.fromNullable(c.createDesignDoc(doc)).or(false);
       }
     });
   }

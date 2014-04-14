@@ -1,6 +1,7 @@
 package com.atex.milan.video.converter;
 
 import java.io.File;
+import java.util.Map;
 
 /**
  * VideoConverter
@@ -29,4 +30,13 @@ public interface VideoConverter
    * @throws Exception
    */
   public int extractThumb(final File video, final File thumb) throws Exception;
+
+  /**
+   * Extract video information.
+   *
+   * @param video
+   * @return
+   * @throws Exception
+   */
+  public Map<String, Object> extractVideoInfo(final File video) throws Exception;
 }

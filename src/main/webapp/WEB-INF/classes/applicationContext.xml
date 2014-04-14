@@ -35,9 +35,19 @@
   <context:annotation-config/>
   -->
 
+  <bean name="uuid" class="java.util.UUID" factory-method="randomUUID" scope="prototype"/>
+
   <bean name="loggerProcessor" class="com.atex.milan.video.processor.LoggerProcessor" scope="singleton" />
-  <bean name="videoProcessor" class="com.atex.milan.video.processor.VideoProcessor" scope="singleton" />
-  <bean name="videoThumbProcessor" class="com.atex.milan.video.processor.VideoThumbProcessor" scope="singleton" />
+  <bean name="videoMp4Processor" class="com.atex.milan.video.processor.VideoMediaProcessor" scope="singleton">
+    <constructor-arg index="0" value="mp4" type="java.lang.String" />
+    <constructor-arg index="1" value="mp4" type="java.lang.String" />
+    <constructor-arg index="2" value="false" type="java.lang.Boolean" />
+  </bean>
+  <bean name="videoThumbProcessor" class="com.atex.milan.video.processor.VideoMediaProcessor" scope="singleton">
+    <constructor-arg index="0" value="thumb" type="java.lang.String" />
+    <constructor-arg index="1" value="jpg" type="java.lang.String" />
+    <constructor-arg index="2" value="true" type="java.lang.Boolean" />
+  </bean>
   <bean name="videoConfigurationProcessor" class="com.atex.milan.video.processor.VideoConfigurationProcessor" scope="singleton" />
   <bean name="videoImportProcessor" class="com.atex.milan.video.processor.VideoImportProcessor"/>
 
@@ -63,7 +73,14 @@
          See http://camel.apache.org/file2.html for information about the file component -->
 
     <camel:route errorHandlerRef="deadLetterErrorHandler">
-      <camel:from uri="file:work/inbox?recursive=true&amp;initialDelay=10000&amp;delay=2000&amp;readLock=changed&amp;readLockMinLength=0&amp;delete=true&amp;include=.*\.*" />
+      <camel:from uri="file:work/inbox?recursive=false&amp;initialDelay=10000&amp;delay=2000&amp;readLock=changed&amp;readLockMinLength=0&amp;delete=true&amp;include=.*\.*" />
+      <camel:to uri="log:com.atex.milan.video?level=INFO"/>
+      <camel:process ref="loggerProcessor" />
+      <camel:to uri="file:work/process?fileName=/${bean:uuid?method=toString}/${file:name}&amp;autoCreate=true" />
+    </camel:route>
+
+    <camel:route errorHandlerRef="deadLetterErrorHandler">
+      <camel:from uri="file:work/process?recursive=true&amp;initialDelay=10000&amp;delay=2000&amp;readLock=changed&amp;readLockMinLength=0&amp;delete=true&amp;include=.*\.*" />
       <camel:to uri="seda:videoProcess" />
     </camel:route>
 
@@ -74,7 +91,7 @@
 
         <camel:process ref="loggerProcessor" />
         <camel:process ref="videoConfigurationProcessor" />
-        <camel:process ref="videoProcessor" />
+        <camel:process ref="videoMp4Processor" />
         <camel:process ref="videoThumbProcessor" />
 
       </camel:pipeline>
