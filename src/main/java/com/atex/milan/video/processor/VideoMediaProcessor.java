@@ -13,9 +13,9 @@ import com.atex.milan.video.data.FormatInfo;
 import com.atex.milan.video.data.Media;
 import com.atex.milan.video.data.StreamInfo;
 import com.atex.milan.video.data.VideoInfo;
+import com.atex.milan.video.resolver.MediaFileResolver;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 
 /**
  * Convert video to mp4.
@@ -39,8 +39,7 @@ public class VideoMediaProcessor extends BaseVideoProcessor
   };
 
   @Inject
-  @Named("video.repository.base")
-  private String baseRepository;
+  private MediaFileResolver mediaFileResolver;
 
   final private String type;
   final private String extension;
@@ -92,15 +91,7 @@ public class VideoMediaProcessor extends BaseVideoProcessor
         setVideoInfoOrig(originalMessage, createVideoInfo(in));
       }
 
-      String videoPath = out.getAbsolutePath();
-      if (baseRepository != null) {
-        if (videoPath.startsWith(baseRepository)) {
-          videoPath = videoPath.substring(baseRepository.length() + 1);
-          if (videoPath.startsWith("/")) {
-            videoPath = videoPath.substring(1);
-          }
-        }
-      }
+      final String videoPath = mediaFileResolver.makeRelative(out);
 
       final Media media = new Media();
       media.setPath(videoPath);

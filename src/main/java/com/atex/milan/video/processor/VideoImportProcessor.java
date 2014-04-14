@@ -1,6 +1,8 @@
 package com.atex.milan.video.processor;
 
+import java.io.File;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.camel.Exchange;
@@ -11,7 +13,10 @@ import org.slf4j.LoggerFactory;
 
 import com.atex.milan.video.couchbase.VideoRepository;
 import com.atex.milan.video.data.DataType;
+import com.atex.milan.video.data.Media;
 import com.atex.milan.video.data.Video;
+import com.atex.milan.video.resolver.MediaFileResolver;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 
 /**
@@ -26,6 +31,9 @@ public class VideoImportProcessor extends BaseVideoProcessor
   @Inject
   private VideoRepository videoRepository;
   
+  @Inject
+  private MediaFileResolver mediaFileResolver;
+
   @Override
   public void process(final Exchange exchange) throws Exception
   {
@@ -54,6 +62,32 @@ public class VideoImportProcessor extends BaseVideoProcessor
         logger.info("Creating video with uuid: {}", videoUUID);
       } else {
         logger.info("Updating video with uuid: {}", videoUUID);
+        
+        final List<File> files = Lists.newArrayList();
+        for (final Media m : v.getMedia()) {
+          final File f = mediaFileResolver.getFile(m);
+          if (f != null && f.exists()) {
+            files.add(f);
+          }
+        }
+
+        // do not remove unchanged media files.
+
+        for (final Media m : getMedia(msg)) {
+          final File f = mediaFileResolver.getFile(m);
+          if (files.contains(f)) {
+            files.remove(f);
+          }
+        }
+
+        for (final File f : files) {
+          try {
+            logger.trace("Removing file {}", f.getAbsolutePath());
+            f.delete();
+          } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+          }
+        }
       }
 
       v.setName(FilenameUtils.getName(name));

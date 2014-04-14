@@ -9,6 +9,7 @@ import com.atex.milan.video.couchbase.DBClient;
 import com.atex.milan.video.couchbase.DBClientImpl;
 import com.atex.milan.video.couchbase.VideoRepository;
 import com.atex.milan.video.couchbase.VideoRepositoryImpl;
+import com.atex.milan.video.resolver.MediaFileResolver;
 import com.atex.milan.video.util.ServiceProperties;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
@@ -36,6 +37,7 @@ public class ConfigureModule extends AbstractModule
       bind(VideoConverter.class).to(VideoConverterImpl.class);
       bind(DBClient.class).to(DBClientImpl.class).in(Scopes.SINGLETON);
       bind(VideoRepository.class).to(VideoRepositoryImpl.class).in(Scopes.SINGLETON);
+      bind(MediaFileResolver.class).toInstance(new MediaFileResolver());
 
     } catch (final Throwable e) {
       logger.error("Cannot initialize GUICE: {}", e.getMessage(), e);

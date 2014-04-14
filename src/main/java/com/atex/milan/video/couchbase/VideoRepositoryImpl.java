@@ -104,7 +104,7 @@ public class VideoRepositoryImpl implements VideoRepository
   {
     final Query q = new Query()
             .setIncludeDocs(true)
-            .setStale(Stale.UPDATE_AFTER)
+            .setStale(Stale.FALSE)
             .setKey(ComplexKey.of(uuid))
             .setLimit(1);
     final List<Video> list = client.queryViewDocs(VIDEO_DESIGN, VIDEO_UUID_VIEW, q, Video.class);
