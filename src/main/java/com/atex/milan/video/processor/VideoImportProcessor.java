@@ -1,5 +1,6 @@
 package com.atex.milan.video.processor;
 
+import java.util.Date;
 import java.util.Map;
 
 import org.apache.camel.Exchange;
@@ -39,15 +40,25 @@ public class VideoImportProcessor extends BaseVideoProcessor
 
       final String videoUUID = (String) getMessageProperty(msg, VideoConfigurationProcessor.VIDEOID_HEADER);
 
+      final long ts = new Date().getTime();
+      final long processTime = (ts - Long.parseLong(getTimestamp(msg)));
+      
       Video v = videoRepository.getVideoByUUID(videoUUID);
       final boolean isNew = (v == null);
       if (v == null) {
         v = new Video();
         v.setType(DataType.VIDEO);
         v.setUuid(videoUUID);
+        v.setCreated(ts);
+
+        logger.info("Creating video with uuid: {}", videoUUID);
+      } else {
+        logger.info("Updating video with uuid: {}", videoUUID);
       }
 
       v.setName(FilenameUtils.getName(name));
+      v.setModified(ts);
+      v.setProcessTime(processTime);
       v.setVideoInfo(getVideoInfoOrig(msg));
       v.setMedia(getMedia(msg));
 
