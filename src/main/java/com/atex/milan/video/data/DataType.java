@@ -7,5 +7,7 @@ package com.atex.milan.video.data;
  */
 public enum DataType
 {
-  VIDEO;
+  VIDEO,
+
+  AUDIO;
 }

@@ -7,9 +7,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.atex.milan.video.exceptions.CouchException;
 import com.couchbase.client.CouchbaseClient;
@@ -33,13 +32,13 @@ import com.google.inject.name.Named;
  */
 public class DBClientImpl implements DBClient
 {
-  private static final Logger logger = LoggerFactory.getLogger(DBClientImpl.class);
+  private static final Logger logger = Logger.getLogger(DBClientImpl.class.getName());
 
-  final private List<URI> hosts;
+  private final List<URI> hosts;
 
-  final private String couchBucket;
+  private final String couchBucket;
 
-  final private String couchPwd;
+  private final String couchPwd;
   
   private CouchbaseClient client = null;
 
@@ -59,7 +58,7 @@ public class DBClientImpl implements DBClient
       try {
         hosts.add(new URI(uri));
       } catch (URISyntaxException e) {
-        logger.error("{} is not a URI: {}", uri, e.getMessage());
+        logger.log(Level.SEVERE, uri + " is not a URI: " + e.getMessage());
       }
     }
     this.couchBucket = couchBucket;
@@ -95,7 +94,7 @@ public class DBClientImpl implements DBClient
     try {
       getClient();
     } catch (Throwable e) {
-      logger.error(e.getMessage(), e);
+      logger.log(Level.SEVERE, e.getMessage(), e);
       throw new CouchException(e);
     }
   }
@@ -217,7 +216,7 @@ public class DBClientImpl implements DBClient
       @Override
       public T convertRow(final Gson gson, final ViewRow row)
       {
-        return gson.fromJson((String)row.getDocument(), c);
+        return gson.fromJson((String) row.getDocument(), c);
       }
     });
   }
@@ -242,13 +241,13 @@ public class DBClientImpl implements DBClient
     try {
       return f.apply(getClient());
     } catch (Throwable e) {
-      logger.error(e.getMessage(), e);
+      logger.log(Level.SEVERE, e.getMessage(), e);
       throw new CouchException(e);
     }
   }
 
   private interface CouchFunction<T>
   {
-    public T apply(final CouchbaseClient c) throws Exception;
+    T apply(final CouchbaseClient c) throws Exception;
   }
 }

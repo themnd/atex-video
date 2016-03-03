@@ -10,6 +10,11 @@
     <param-value>classpath:applicationContext.xml</param-value>
   </context-param>
 
+  <context-param>
+    <param-name>p.applicationName</param-name>
+    <param-value>server-video</param-value>
+  </context-param>
+
   <listener>
     <listener-class>com.atex.milan.video.servlet.listener.VideoContextListener</listener-class>
   </listener>
@@ -17,18 +22,6 @@
   <listener>
     <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
   </listener>
-
-  <filter>
-    <filter-name>UrlRewriteFilter</filter-name>
-    <filter-class>org.tuckey.web.filters.urlrewrite.UrlRewriteFilter</filter-class>
-  </filter>
-
-  <filter-mapping>
-    <filter-name>UrlRewriteFilter</filter-name>
-    <url-pattern>/*</url-pattern>
-    <dispatcher>REQUEST</dispatcher>
-    <dispatcher>FORWARD</dispatcher>
-  </filter-mapping>
 
   <servlet>
     <servlet-name>fileServlet</servlet-name>
@@ -38,6 +31,16 @@
   <servlet-mapping>
     <servlet-name>fileServlet</servlet-name>
     <url-pattern>/media/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>uploadServlet</servlet-name>
+    <servlet-class>com.atex.milan.video.servlet.UploadServlet</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>uploadServlet</servlet-name>
+    <url-pattern>/upload/*</url-pattern>
   </servlet-mapping>
 
 </web-app>

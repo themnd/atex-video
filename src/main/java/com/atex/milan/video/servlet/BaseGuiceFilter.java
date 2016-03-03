@@ -1,18 +1,17 @@
 package com.atex.milan.video.servlet;
 
+import java.util.logging.Logger;
+
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.inject.Injector;
 
 public abstract class BaseGuiceFilter implements Filter
 {
-  private static final Logger logger = LoggerFactory.getLogger(BaseGuiceFilter.class);
+  private static final Logger logger = Logger.getLogger(BaseGuiceFilter.class.getName());
   
   private Injector injector;
   private ServletContext servletContext;
@@ -20,7 +19,7 @@ public abstract class BaseGuiceFilter implements Filter
   @Override
   public void init(final FilterConfig config) throws ServletException
   {
-    logger.info("init {}", this.getClass().getName());
+    logger.info("init " + this.getClass().getName());
 
     servletContext = config.getServletContext();
     
@@ -31,7 +30,7 @@ public abstract class BaseGuiceFilter implements Filter
   @Override
   public void destroy()
   {
-    logger.info("destroy {}", this.getClass().getName());
+    logger.info("destroy " + this.getClass().getName());
   }
 
   protected ServletContext getServletContext()

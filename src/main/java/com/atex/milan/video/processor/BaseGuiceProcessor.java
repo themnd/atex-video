@@ -1,11 +1,10 @@
 package com.atex.milan.video.processor;
 
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.apache.camel.Message;
 import org.apache.camel.Processor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.atex.milan.video.util.InjectorUtils;
 
@@ -16,7 +15,7 @@ import com.atex.milan.video.util.InjectorUtils;
  */
 public abstract class BaseGuiceProcessor implements Processor
 {
-  private static final Logger logger = LoggerFactory.getLogger(BaseGuiceProcessor.class);
+  private static final Logger logger = Logger.getLogger(BaseGuiceProcessor.class.getName());
 
   public BaseGuiceProcessor()
   {
@@ -24,10 +23,10 @@ public abstract class BaseGuiceProcessor implements Processor
     injectorUtils.injectMembers(this);
   }
 
-  protected Object getMessageProperty(final Message msg, final String name)
+  protected <T extends Object> T getMessageProperty(final Message msg, final String name)
   {
     final Map<String, Object> headers = msg.getHeaders();
-    return (Object) headers.get(name);
+    return (T) headers.get(name);
   }
 
   protected void setMessageProperty(final Message msg, final String name, final Object value)

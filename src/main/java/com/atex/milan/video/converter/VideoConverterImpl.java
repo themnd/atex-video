@@ -6,14 +6,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.atex.milan.video.util.ServiceProperties;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.inject.Inject;
@@ -25,14 +26,20 @@ import com.google.inject.Inject;
  */
 public class VideoConverterImpl implements VideoConverter
 {
-  private static final Logger logger = LoggerFactory.getLogger(VideoConverterImpl.class);
+  static final Logger logger = Logger.getLogger(VideoConverterImpl.class.getName());
 
-  final private ServiceProperties serviceProperties;
+  private final ServiceProperties serviceProperties;
 
   private String ffmpegBin;
   private String ffprobeBin;
+  private String qtfaststartBin;
   private List<String> videoOptions;
+  private List<String> videoGlobalOptions;
   private List<String> thumbOptions;
+  private List<String> thumbShortOptions;
+  private List<String> thumbGlobalOptions;
+  private List<String> audioOptions;
+  private List<String> audioGlobalOptions;
   private List<String> probeOptions;
   private List<String> probeData;
   private File workDir;
@@ -47,14 +54,13 @@ public class VideoConverterImpl implements VideoConverter
   public void init()
   {
     ffmpegBin = serviceProperties.getProperty("ffmpeg.location");
-    videoOptions = Lists.newArrayList(Splitter
-            .on(" ")
-            .omitEmptyStrings()
-            .split(serviceProperties.getProperty("ffmpeg.video.options")));
-    thumbOptions = Lists.newArrayList(Splitter
-            .on(" ")
-            .omitEmptyStrings()
-            .split(serviceProperties.getProperty("ffmpeg.thumb.options")));
+    videoOptions = getOptions("ffmpeg.video.options");
+    videoGlobalOptions = getOptions("ffmpeg.video.global.options");
+    thumbOptions = getOptions("ffmpeg.thumb.options");
+    thumbShortOptions = getOptions("ffmpeg.thumb.short.options");
+    thumbGlobalOptions = getOptions("ffmpeg.thumb.global.options");
+    audioOptions = getOptions("ffmpeg.audio.options");
+    audioGlobalOptions = getOptions("ffmpeg.audio.global.options");
     ffprobeBin = serviceProperties.getProperty("ffprobe.location");
     probeOptions = Lists.newArrayList(Splitter
             .on(" ")
@@ -64,6 +70,7 @@ public class VideoConverterImpl implements VideoConverter
             .on("|")
             .omitEmptyStrings()
             .split(serviceProperties.getProperty("ffprobe.probe.data")));
+    qtfaststartBin = serviceProperties.getProperty("qtfaststart.location");
     final String dir = serviceProperties.getProperty("ffmpeg.process.workdir");
     if (dir != null) {
       workDir = new File(dir);
@@ -72,35 +79,67 @@ public class VideoConverterImpl implements VideoConverter
     }
   }
 
-  @Override
-  public int convert(final File in, final File out) throws Exception
-  {
-    try {
-      logger.info("Converting {} to {}", in.getAbsolutePath(), out.getAbsolutePath());
-
-      final List<String> arguments = createArguments(in, out, videoOptions);
-      return executeFFMpeg(arguments);
-    } catch (Exception e) {
-      logger.error("Error while processing {}: {}", in.getAbsolutePath(), e.getMessage(), e);
-      throw e;
-    } finally {
-      logger.info("Converted file {}", out.getAbsolutePath());
+  private List<String> getOptions(final String optionName) {
+    final String options = serviceProperties.getProperty(optionName);
+    if (Strings.isNullOrEmpty(options)) {
+      return Lists.newArrayList();
+    } else {
+      return Lists.newArrayList(Splitter
+              .on(" ")
+              .omitEmptyStrings()
+              .split(options));
     }
   }
 
   @Override
-  public int extractThumb(final File video, final File thumb) throws Exception
+  public int convert(final File in, final File out) throws Exception
   {
     try {
-      logger.info("Extract thumb from {} to {}", video.getAbsolutePath(), thumb.getAbsolutePath());
+      logger.info("Converting " + in.getAbsolutePath() + " to " +  out.getAbsolutePath());
 
-      final List<String> arguments = createArguments(video, thumb, thumbOptions);
+      final List<String> arguments = createArguments(in, out, videoGlobalOptions, videoOptions);
       return executeFFMpeg(arguments);
     } catch (Exception e) {
-      logger.error("Error while processing {}: {}", video.getAbsolutePath(), e.getMessage(), e);
+      logger.log(Level.SEVERE, "Error while processing " + in.getAbsolutePath() + ": " + e.getMessage(), e);
       throw e;
     } finally {
-      logger.info("Extracted file {}", thumb.getAbsolutePath());
+      logger.info("Converted file " + out.getAbsolutePath());
+    }
+  }
+
+  @Override
+  public int extractThumb(final File video, final File thumb, final boolean useShort) throws Exception
+  {
+    try {
+      logger.info("Extract thumb from " + video.getAbsolutePath() + " to " + thumb.getAbsolutePath());
+
+      final List<String> arguments;
+      if (useShort) {
+        arguments = createArguments(video, thumb, thumbGlobalOptions, thumbShortOptions);
+      } else {
+        arguments = createArguments(video, thumb, thumbGlobalOptions, thumbOptions);
+      }
+      return executeFFMpeg(arguments);
+    } catch (Exception e) {
+      logger.log(Level.SEVERE, "Error while processing " + video.getAbsolutePath() + ": " + e.getMessage(), e);
+      throw e;
+    } finally {
+      logger.info("Extracted file " + thumb.getAbsolutePath());
+    }
+  }
+
+  @Override
+  public int convertAudio(final File in, final File out) throws Exception {
+    try {
+      logger.info("Converting " + in.getAbsolutePath() + " to " +  out.getAbsolutePath());
+
+      final List<String> arguments = createArguments(in, out, audioGlobalOptions, audioOptions);
+      return executeFFMpeg(arguments);
+    } catch (Exception e) {
+      logger.log(Level.SEVERE, "Error while processing " + in.getAbsolutePath() + ": " + e.getMessage(), e);
+      throw e;
+    } finally {
+      logger.info("Converted file " + out.getAbsolutePath());
     }
   }
 
@@ -108,41 +147,38 @@ public class VideoConverterImpl implements VideoConverter
   public Map<String, Object> extractVideoInfo(final File video) throws Exception
   {
     try {
-      logger.info("Extract video info from {}", video.getAbsolutePath());
+      logger.info("Extract video info from " + video.getAbsolutePath());
 
       final List<String> arguments = createFFProbeArguments(video, probeOptions);
       return executeFFProbe(arguments);
     } catch (Exception e) {
-      logger.error("Error while processing {}: {}", video.getAbsolutePath(), e.getMessage(), e);
+      logger.log(Level.SEVERE, "Error while processing " + video.getAbsolutePath() + ": " + e.getMessage(), e);
       throw e;
     } finally {
-      logger.info("Extracted info from file {}", video.getAbsolutePath());
+      logger.info("Extracted info from file " + video.getAbsolutePath());
+    }
+  }
+
+  @Override
+  public int qtFastStart(final File in, final File out) throws Exception {
+
+    try {
+      logger.info("qtFastStart video from " + in.getAbsolutePath());
+
+      final List<String> arguments = createQTFastStartArguments(in, out);
+      return executeQTFastStart(arguments);
+    } catch (Exception e) {
+      logger.log(Level.SEVERE, "Error while processing " + in.getAbsolutePath() + ": " + e.getMessage(), e);
+      throw e;
+    } finally {
+      logger.info("qtFastStart video to file " + out.getAbsolutePath());
     }
   }
 
   private int executeFFMpeg(final List<String> arguments) throws IOException,
                                                                  InterruptedException
   {
-    final File tmpWorkingDir = createTempDir(workDir);
-
-    try {
-      final Process p = new ProcessBuilder()
-              .command(arguments)
-              .directory(tmpWorkingDir)
-              .start();
-
-      final String ins = IOUtils.toString(p.getInputStream());
-      final String errs = IOUtils.toString(p.getErrorStream());
-
-      logger.info(ins);
-      logger.error(errs);
-
-      final int exitValue = p.waitFor();
-      logger.info("exit value {}", exitValue);
-      return exitValue;
-    } finally {
-      FileUtils.deleteDirectory(tmpWorkingDir);
-    }
+    return executeExternalProcess(arguments);
   }
 
   private Map<String, Object> executeFFProbe(final List<String> arguments) throws IOException,
@@ -160,10 +196,10 @@ public class VideoConverterImpl implements VideoConverter
       final String errs = IOUtils.toString(p.getErrorStream());
 
       logger.info(ins);
-      logger.error(errs);
+      logger.severe(errs);
 
       final int exitValue = p.waitFor();
-      logger.info("exit value {}", exitValue);
+      logger.info("exit value " + exitValue);
       if (exitValue == 0) {
         final Map<String, Object> m = new HashMap<String, Object>();
         return (Map<String, Object>) new Gson().fromJson(ins, m.getClass());
@@ -174,10 +210,41 @@ public class VideoConverterImpl implements VideoConverter
     }
   }
 
-  private List<String> createArguments(final File in, final File out, final List<String> options)
+  private int executeQTFastStart(final List<String> arguments) throws IOException, InterruptedException
+  {
+    return executeExternalProcess(arguments);
+  }
+
+  private int executeExternalProcess(final List<String> arguments) throws IOException, InterruptedException
+  {
+    final File tmpWorkingDir = createTempDir(workDir);
+
+    try {
+      final Process p = new ProcessBuilder()
+              .command(arguments)
+              .directory(tmpWorkingDir)
+              .start();
+
+      final String ins = IOUtils.toString(p.getInputStream());
+      final String errs = IOUtils.toString(p.getErrorStream());
+
+      logger.info(ins);
+      logger.severe(errs);
+
+      final int exitValue = p.waitFor();
+      logger.info("exit value " + exitValue);
+      return exitValue;
+    } finally {
+      FileUtils.deleteDirectory(tmpWorkingDir);
+    }
+  }
+
+  private List<String> createArguments(final File in, final File out, final List<String> globals,
+                                       final List<String> options)
   {
     final List<String> arguments = new ArrayList<String>();
     arguments.add(ffmpegBin);
+    arguments.addAll(globals);
     arguments.add("-i");
     arguments.add(in.getAbsolutePath());
     arguments.addAll(options);
@@ -194,6 +261,15 @@ public class VideoConverterImpl implements VideoConverter
     arguments.add("-i");
     arguments.add(in.getAbsolutePath());
     arguments.addAll(options);
+    return arguments;
+  }
+
+  private List<String> createQTFastStartArguments(final File in, final File out)
+  {
+    final List<String> arguments = new ArrayList<String>();
+    arguments.add(qtfaststartBin);
+    arguments.add(in.getAbsolutePath());
+    arguments.add(out.getAbsolutePath());
     return arguments;
   }
 

@@ -1,5 +1,9 @@
 package com.atex.milan.video.data;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import com.atex.milan.video.processor.MediaType;
+
 /**
  * Media
  * 11/04/14 on 09:21
@@ -13,6 +17,14 @@ public class Media
   private String path;
   private long size;
   private VideoInfo videoInfo;
+
+  public Media() {
+  }
+
+  public Media(final MediaType mediaType) {
+    this.type = checkNotNull(mediaType).getMediaType();
+    this.extension = checkNotNull(mediaType).getExtension();
+  }
 
   public String getType()
   {

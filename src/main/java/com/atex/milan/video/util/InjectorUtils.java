@@ -2,80 +2,67 @@ package com.atex.milan.video.util;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import javax.servlet.ServletContext;
+import java.util.logging.Logger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.servlet.ServletContext;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 
 /**
- * InjectorUtils
- * 09/04/14 on 07:51
- *
- * @author mnova
+ * Guice injector helper util.
  */
-public class InjectorUtils
+public final class InjectorUtils
 {
-  static final private Logger logger = LoggerFactory.getLogger(InjectorUtils.class);
+    private static final Logger LOGGER = Logger.getLogger(InjectorUtils.class.getName());
 
-  private static InjectorUtils injectorUtils = new InjectorUtils();
-  
-  private Injector injector;
-  
-  private InjectorUtils()
-  {
-  }
-  
-  public static InjectorUtils getInstance()
-  {
-    return injectorUtils;
-  }
+    private static InjectorUtils injectorUtils = new InjectorUtils();
 
-  public Injector getInjector()
-  {
-    return injector;
-  }
+    private Injector injector;
 
-  public void setInjector(final Injector injector)
-  {
-    this.injector = injector;
-  }
-
-  public void initInjector(final ServletContext servletContext, final Module[] modules)
-  {
-    Injector injector = (Injector) servletContext.getAttribute(Injector.class.getName());
-    if (injector == null) {
-      logger.info("new injector");
-      injector = Guice.createInjector(modules);
-    } else {
-      logger.info("new child injector");
-      injector = injector.createChildInjector(modules);
+    private InjectorUtils() {
     }
-    servletContext.setAttribute(Injector.class.getName(), injector);
-    setInjector(injector);
-  }
 
-  public void removeInjector(final ServletContext servletContext)
-  {
-    setInjector(null);
-    servletContext.removeAttribute(Injector.class.getName());
-  }
+    public static InjectorUtils getInstance()
+    {
+        return injectorUtils;
+    }
 
-  public void injectMembers(final Object object)
-  {
-    checkNotNull(injector);
+    public Injector getInjector()
+    {
+        return injector;
+    }
 
-    injector.injectMembers(object);
-  }
+    public void setInjector(final Injector injector)
+    {
+        this.injector = injector;
+    }
 
-  public <T> T newInstance(final Class<T> c)
-  {
-    checkNotNull(injector);
+    public void initInjector(final ServletContext servletContext, final Module[] modules) {
+        Injector servletInjector = (Injector) servletContext.getAttribute(Injector.class.getName());
+        if (servletInjector == null) {
+            LOGGER.info("new injector");
+            servletInjector = Guice.createInjector(modules);
+        } else {
+            LOGGER.info("new child injector");
+            servletInjector = servletInjector.createChildInjector(modules);
+        }
+        servletContext.setAttribute(Injector.class.getName(), servletInjector);
+        setInjector(servletInjector);
+    }
 
-    return injector.getInstance(c);
-  }
+    public void removeInjector(final ServletContext servletContext) {
+        setInjector(null);
+        servletContext.removeAttribute(Injector.class.getName());
+    }
+
+    public void injectMembers(final Object object) {
+        checkNotNull(injector).injectMembers(object);
+    }
+
+    public <T> T newInstance(final Class<T> c) {
+        return checkNotNull(injector).getInstance(c);
+    }
 
 }

@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:camel="http://camel.apache.org/schema/spring"
+       xmlns:jee="http://www.springframework.org/schema/jee"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context.xsd
+                           http://camel.apache.org/schema/spring
+                           http://camel.apache.org/schema/spring/camel-spring.xsd
+                           http://www.springframework.org/schema/jee
+                           http://www.springframework.org/schema/jee/spring-jee.xsd">
+
+  <bean name="uuid" class="java.util.UUID" factory-method="randomUUID" scope="prototype"/>
+
+  <bean name="loggerProcessor" class="com.atex.milan.video.processor.LoggerProcessor" scope="singleton" />
+  <bean name="videoMp4Processor" class="com.atex.milan.video.processor.VideoMediaProcessor" scope="singleton">
+    <constructor-arg index="0" value="mp4" type="java.lang.String" />
+    <constructor-arg index="1" value="mp4" type="java.lang.String" />
+    <constructor-arg index="2" value="false" type="java.lang.Boolean" />
+  </bean>
+  <bean name="videoThumbProcessor" class="com.atex.milan.video.processor.VideoMediaProcessor" scope="singleton">
+    <constructor-arg index="0" value="thumb" type="java.lang.String" />
+    <constructor-arg index="1" value="jpg" type="java.lang.String" />
+    <constructor-arg index="2" value="true" type="java.lang.Boolean" />
+  </bean>
+  <bean name="videoConfigurationProcessor" class="com.atex.milan.video.processor.VideoConfigurationProcessor" scope="singleton" />
+  <bean name="videoUploadConfigurationProcessor" class="com.atex.milan.video.processor.VideoUploadConfigurationProcessor" scope="singleton" />
+  <bean name="videoImportProcessor" class="com.atex.milan.video.processor.VideoImportProcessor"/>
+  <bean name="videoArchiveProcessor" class="com.atex.milan.video.processor.VideoOriginalArchiveProcessor"/>
+  <bean name="videoCleanupProcessor" class="com.atex.milan.video.processor.VideoCleanupProcessor"/>
+  <bean name="audioProcessor" class="com.atex.milan.video.processor.AudioProcessor"/>
+  <bean name="audioImportProcessor" class="com.atex.milan.video.processor.AudioImportProcessor"/>
+
+  <camel:errorHandler
+      id="deadLetterErrorHandler"
+      type="DeadLetterChannel"
+      redeliveryPolicyRef="inboxRedeliveryPolicy"
+      deadLetterUri="file:${video.process.error}?fileName=${date:now:yyyyMMdd_HHmmss}.${file:name}&amp;fileExist=Move&amp;moveExisting=${file:name}_0" />
+  <camel:redeliveryPolicyProfile id="inboxRedeliveryPolicy" maximumRedeliveries="0" />
+
+  <camel:errorHandler
+      id="audioDeadLetterErrorHandler"
+      type="DeadLetterChannel"
+      redeliveryPolicyRef="audioRedeliveryPolicy"
+      deadLetterUri="file:${audio.process.error}?fileName=${date:now:yyyyMMdd_HHmmss}.${file:name}&amp;fileExist=Move&amp;moveExisting=${file:name}_0" />
+  <camel:redeliveryPolicyProfile id="audioRedeliveryPolicy" maximumRedeliveries="0" />
+
+  <camel:camelContext id="camel" xmlns="http://camel.apache.org/schema/spring" >
+
+    <!-- Content xml, jar and .content import, monitoring the 'work/inbox' directory (relative to the project root).
+         See http://camel.apache.org/file2.html for information about the file component -->
+
+    <camel:route errorHandlerRef="deadLetterErrorHandler">
+      <camel:from uri="file:${video.process.inbox}?recursive=false&amp;initialDelay=10000&amp;delay=2000&amp;readLock=changed&amp;readLockMinLength=0&amp;delete=true&amp;include=.*\.*" />
+      <camel:to uri="log:com.atex.milan.video?level=INFO"/>
+      <camel:process ref="loggerProcessor" />
+      <camel:to uri="file:${video.process.work}?fileName=/${bean:uuid?method=toString}/${file:name}&amp;autoCreate=true" />
+    </camel:route>
+
+    <camel:route errorHandlerRef="deadLetterErrorHandler">
+      <camel:from
+          uri="file:${video.process.work}?recursive=true&amp;initialDelay=10000&amp;delay=2000&amp;readLock=changed&amp;readLockMinLength=0&amp;delete=true&amp;include=.*\.*" />
+      <camel:to uri="seda:videoProcess" />
+    </camel:route>
+
+    <camel:route errorHandlerRef="audioDeadLetterErrorHandler">
+      <camel:from uri="file:${audio.process.inbox}?recursive=false&amp;initialDelay=10000&amp;delay=2000&amp;readLock=changed&amp;readLockMinLength=0&amp;delete=true&amp;include=.*\.*" />
+      <camel:to uri="log:com.atex.milan.video?level=INFO"/>
+      <camel:process ref="loggerProcessor" />
+      <camel:to uri="file:${audio.process.work}?fileName=/${bean:uuid?method=toString}/${file:name}&amp;autoCreate=true" />
+    </camel:route>
+
+    <camel:route errorHandlerRef="audioDeadLetterErrorHandler">
+      <camel:from
+          uri="file:${audio.process.work}?recursive=true&amp;initialDelay=10000&amp;delay=2000&amp;readLock=changed&amp;readLockMinLength=0&amp;delete=true&amp;include=.*\.*" />
+      <camel:to uri="seda:audioProcess" />
+    </camel:route>
+
+    <camel:route errorHandlerRef="deadLetterErrorHandler">
+      <camel:from uri="seda:videoProcess" />
+
+      <camel:pipeline>
+
+        <camel:process ref="loggerProcessor" />
+        <camel:process ref="videoConfigurationProcessor" />
+        <camel:process ref="videoMp4Processor" />
+        <camel:process ref="videoThumbProcessor" />
+        <camel:process ref="videoArchiveProcessor" />
+
+      </camel:pipeline>
+
+      <camel:to uri="seda:videoImport" />
+    </camel:route>
+
+    <camel:route errorHandlerRef="deadLetterErrorHandler">
+      <camel:from uri="seda:videoImport" />
+
+      <camel:pipeline>
+
+        <camel:process ref="loggerProcessor" />
+        <camel:process ref="videoImportProcessor" />
+        <camel:process ref="videoCleanupProcessor" />
+
+      </camel:pipeline>
+
+    </camel:route>
+
+    <camel:route errorHandlerRef="audioDeadLetterErrorHandler">
+      <camel:from uri="seda:audioProcess" />
+
+      <camel:pipeline>
+
+        <camel:process ref="loggerProcessor" />
+        <camel:process ref="videoConfigurationProcessor" />
+        <camel:process ref="audioProcessor" />
+        <camel:process ref="videoArchiveProcessor" />
+
+      </camel:pipeline>
+
+      <camel:to uri="seda:audioImport" />
+    </camel:route>
+
+    <camel:route errorHandlerRef="audioDeadLetterErrorHandler">
+      <camel:from uri="seda:audioUploadProcess" />
+
+      <camel:pipeline>
+
+        <camel:process ref="loggerProcessor" />
+        <camel:process ref="videoUploadConfigurationProcessor" />
+        <camel:process ref="audioProcessor" />
+        <camel:process ref="videoArchiveProcessor" />
+
+      </camel:pipeline>
+
+      <camel:to uri="seda:audioImport" />
+    </camel:route>
+
+    <camel:route errorHandlerRef="audioDeadLetterErrorHandler">
+      <camel:from uri="seda:audioImport" />
+
+      <camel:pipeline>
+
+        <camel:process ref="loggerProcessor" />
+        <camel:process ref="audioImportProcessor" />
+        <camel:process ref="videoCleanupProcessor" />
+
+      </camel:pipeline>
+
+    </camel:route>
+
+  </camel:camelContext>
+</beans>

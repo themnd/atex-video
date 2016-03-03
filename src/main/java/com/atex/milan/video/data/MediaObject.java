@@ -9,11 +9,17 @@ import com.google.common.collect.Lists;
  *
  * @author mnova
  */
-public class Video extends BaseModel
+public class MediaObject extends BaseModel
 {
   private String id;
   private String uuid;
+  private String externalId;
+  private String securityParentId;
   private String name;
+  private String title;
+  private String siteCode;
+  private String contentId;
+  private long published;
   private long created;
   private long modified;
   private long processTime;
@@ -40,6 +46,22 @@ public class Video extends BaseModel
     this.uuid = uuid;
   }
 
+  public String getExternalId() {
+    return externalId;
+  }
+
+  public void setExternalId(final String externalId) {
+    this.externalId = externalId;
+  }
+
+  public String getSecurityParentId() {
+    return securityParentId;
+  }
+
+  public void setSecurityParentId(final String securityParentId) {
+    this.securityParentId = securityParentId;
+  }
+
   public String getName()
   {
     return name;
@@ -48,6 +70,38 @@ public class Video extends BaseModel
   public void setName(final String name)
   {
     this.name = name;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public void setTitle(final String title) {
+    this.title = title;
+  }
+
+  public String getSiteCode() {
+    return siteCode;
+  }
+
+  public void setSiteCode(final String siteCode) {
+    this.siteCode = siteCode;
+  }
+
+  public String getContentId() {
+    return contentId;
+  }
+
+  public void setContentId(final String contentId) {
+    this.contentId = contentId;
+  }
+
+  public long getPublished() {
+    return published;
+  }
+
+  public void setPublished(final long published) {
+    this.published = published;
   }
 
   public long getCreated()

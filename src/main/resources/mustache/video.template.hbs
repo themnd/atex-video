@@ -1,0 +1,57 @@
+  <content clear="true">
+    <metadata>
+      <contentid>
+        <major>Article</major>
+        <externalid>{{externalId}}</externalid>
+      </contentid>
+      <input-template>
+        <major>InputTemplate</major>
+        <externalid>{{inputTemplate}}</externalid>
+      </input-template>
+      <security-parent>
+        <major>Department</major>
+        <externalid>{{siteId}}</externalid>
+      </security-parent>
+    </metadata>
+    <component name="name" group="polopoly.Content">{{title}}</component>
+    <component group="p.Inbox" name="showContent">true</component>
+    <component name="value" group="videoID">{{videoId}}</component>
+    <component name="value" group="videoUUID">{{videoUUID}}</component>
+    <component name="value" group="url">{{url}}</component>
+    <component name="value" group="thumbUrl">{{imageUrl}}</component>
+    {{#hasPublicationDate}}
+    <component name="date" group="publishedDate">{{publicationDate}}</component>
+    <component group="p.Content.state" name="onlineState">true</component>
+    {{/hasPublicationDate}}
+    {{^hasPublicationDate}}
+    <component group="p.Content.state" name="onlineState">false</component>
+    {{/hasPublicationDate}}
+    {{#categorization}}
+    <component name="value" group="categorization"><![CDATA[{{{categorization}}}]]></component>
+    {{/categorization}}
+    {{#duration}}
+    <component name="value" group="duration">{{duration}}</component>
+    {{/duration}}
+    <component group="contentData" name="contentData">{"_type":"{{contentDataBeanType}}","byline":"{{byline}}", "title":"{{title}}", "description":"{{description}}", "videoPath": "video.mp4"}
+    </component>
+    {{#url}}
+    <file encoding="URL" name="video.mp4">{{url}}</file>
+    {{/url}}
+    {{#imageUrl}}
+    <file encoding="URL" name="image.jpg">{{imageUrl}}</file>
+    <component group="aspects" name="atex.Image">{"_type":"atex.Image","filePath":"image.jpg"}</component>
+    {{/imageUrl}}
+    {{#hasImage}}
+    <contentlist mode="reset" group="images">
+      <entry mode="insert" withMetadata="false">
+        <metadata>
+          <referredContent>
+            <contentid>
+              <externalid>{{imageExternalId}}</externalid>
+            </contentid>
+          </referredContent>
+        </metadata>
+      </entry>
+    </contentlist>
+    {{/hasImage}}
+  </content>

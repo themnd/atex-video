@@ -1,6 +1,6 @@
 package com.atex.milan.video.couchbase;
 
-import com.atex.milan.video.data.Video;
+import com.atex.milan.video.data.MediaObject;
 import com.atex.milan.video.exceptions.CouchException;
 
 /**
@@ -31,9 +31,9 @@ public interface VideoRepository
    * @return the Video object with the id set.
    * @throws CouchException
    */
-  Video addVideo(final Video v) throws CouchException;
+  MediaObject addMedia(final MediaObject v) throws CouchException;
 
-  boolean setVideo(Video v) throws CouchException;
+  boolean setMedia(MediaObject v) throws CouchException;
 
   /**
    * Fetch the video data.
@@ -42,7 +42,9 @@ public interface VideoRepository
    * @return null if the video has not been found.
    * @throws CouchException
    */
-  Video getVideo(final String id) throws CouchException;
+  MediaObject getMedia(final String id) throws CouchException;
 
-  Video getVideoByUUID(String uuid) throws CouchException;
+  MediaObject getMediaByUUID(String uuid) throws CouchException;
+
+  MediaObject getMediaByExternalId(final String externalId) throws CouchException;
 }

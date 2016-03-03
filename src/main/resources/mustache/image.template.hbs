@@ -1,0 +1,21 @@
+  <content clear="true">
+    <metadata>
+      <contentid>
+        <major>Article</major>
+        <externalid>{{externalId}}</externalid>
+      </contentid>
+      <input-template>
+        <major>InputTemplate</major>
+        <externalid>{{inputTemplate}}</externalid>
+      </input-template>
+      <security-parent>
+        <major>Department</major>
+        <externalid>{{siteId}}</externalid>
+      </security-parent>
+    </metadata>
+    <component group="contentData" name="contentData">{"_type":"{{contentDataBeanType}}","byline":"{{byline}}", "title":"{{title}}", "description":"{{description}}"}
+    </component>
+  {{#url}}
+    <file encoding="URL" name="image/image.jpg">{{url}}</file>
+  {{/url}}
+  </content>

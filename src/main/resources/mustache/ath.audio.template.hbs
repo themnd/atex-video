@@ -1,0 +1,48 @@
+<content clear="true">
+    <metadata>
+        <contentid>
+            <major>Article</major>
+            <externalid>{{externalId}}</externalid>
+        </contentid>
+        <input-template>
+            <major>InputTemplate</major>
+            <externalid>it.athesis.audio.MainElement</externalid>
+        </input-template>
+        <security-parent>
+            <major>Department</major>
+            <externalid>{{siteId}}</externalid>
+        </security-parent>
+    </metadata>
+    <component name="name" group="polopoly.Content">{{title}}</component>
+    <component name="value" group="videoID">{{videoId}}</component>
+    <component name="value" group="videoUUID">{{videoUUID}}</component>
+    <component name="value" group="url">{{url}}</component>
+{{#description}}
+    <component name="value" group="lead">{{description}}</component>
+{{/description}}
+{{#uploadDate}}
+    <component name="date" group="uploadDate">{{uploadDate}}</component>
+{{/uploadDate}}
+{{#expiryDate}}
+    <component group="polopoly.TimeState" name="offTime">{{expiryDate}}</component>
+{{/expiryDate}}
+{{#enabledComments}}
+    <component name="value" group="allowComments">{{enabledComments}}</component>
+{{/enabledComments}}
+{{#section}}
+    <component name="value" group="ath/section">{{section}}</component>
+{{/section}}
+{{#hasImage}}
+    <contentlist mode="reset" group="images">
+        <entry mode="insert" withMetadata="false">
+            <metadata>
+                <referredContent>
+                    <contentid>
+                        <externalid>{{imageExternalId}}</externalid>
+                    </contentid>
+                </referredContent>
+            </metadata>
+        </entry>
+    </contentlist>
+{{/hasImage}}
+</content>
